@@ -1,5 +1,7 @@
 # file-search
 
+[English](README.md) | [日本語](README.ja.md)
+
 Search source code **by meaning**, not keywords: "where do we swallow errors?", "code that retries". Files are cut into function-sized blocks and each block is scored by [Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev), the System One model from [TypeSafe AI](https://typesafe.ai/), via [polidog/jev](https://github.com/polidog/jev).
 
 ## Installation
