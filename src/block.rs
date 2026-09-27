@@ -1,7 +1,5 @@
 use std::path::{Path, PathBuf};
 
-/// Jev に渡す 1 塊あたりの長さ (文字数)
-const BLOCK_CHARS: usize = 1000;
 /// これより短い塊は次の塊とつなげる (行数)
 const MIN_LINES: usize = 3;
 /// これより長い塊は次の空行で切る (行数)
@@ -9,62 +7,70 @@ const MAX_LINES: usize = 40;
 /// これより大きいファイルは生成物とみなして読まない
 const MAX_FILE_BYTES: u64 = 1 << 20;
 
-/// ファイルから切り出した、関数くらいの大きさのコード片
-pub struct Block {
+/// 読み込んだファイルと、そこから切り出した塊
+pub struct SourceFile {
     pub path: PathBuf,
-    /// 1 始まりの行番号
-    pub line: usize,
-    pub text: String,
+    pub lines: Vec<String>,
+    pub blocks: Vec<Block>,
 }
 
-impl Block {
-    /// ファイルを読んで塊に切る。大きすぎる・UTF-8 でない・NUL を含むファイルは空
-    pub fn read(path: &Path) -> Vec<Block> {
-        let too_big = std::fs::metadata(path).map_or(true, |m| m.len() > MAX_FILE_BYTES);
-        let text = match std::fs::read_to_string(path) {
-            Ok(t) if !too_big && !t.contains('\0') => t,
-            _ => return Vec::new(),
-        };
-        split(&text).into_iter().map(|(line, text)| Block { path: path.to_owned(), line, text }).collect()
+/// 関数くらいの大きさのコード片。行番号は 1 始まりで end を含む
+pub struct Block {
+    pub start: usize,
+    pub end: usize,
+}
+
+impl SourceFile {
+    /// ファイルを読んで塊に切る。大きすぎる・UTF-8 でない・NUL を含む・空のファイルは None
+    pub fn read(path: &Path) -> Option<SourceFile> {
+        if std::fs::metadata(path).ok()?.len() > MAX_FILE_BYTES {
+            return None;
+        }
+        let text = std::fs::read_to_string(path).ok().filter(|t| !t.contains('\0'))?;
+        let blocks: Vec<Block> = split(&text).into_iter().map(|(start, end)| Block { start, end }).collect();
+        (!blocks.is_empty()).then(|| SourceFile { path: path.to_owned(), lines: text.lines().map(String::from).collect(), blocks })
     }
 
     /// 出力用の見出し (塊の 1 行目)
-    pub fn head(&self) -> &str {
-        self.text.lines().next().unwrap_or_default().trim()
+    pub fn head(&self, b: &Block) -> &str {
+        self.lines[b.start - 1].trim()
     }
 }
 
-/// 空行のあとに行頭から始まる行で切る。MIN_LINES 未満の塊は次とつなげ、MAX_LINES を超えたら次の空行で切る
+/// 空行のあとに行頭から始まる行で切り、(開始行, 終了行) を返す。
+/// MIN_LINES 未満の塊は次とつなげ、MAX_LINES を超えたら次の空行で切る
 // ponytail: 字下げで判断するだけ。impl / class の中のメソッドは MAX_LINES でしか切れない。正確にやるなら tree-sitter
-fn split(text: &str) -> Vec<(usize, String)> {
+fn split(text: &str) -> Vec<(usize, usize)> {
     let mut out = Vec::new();
-    let mut cur: Vec<&str> = Vec::new();
     let mut start = 0;
+    // 塊に入れた行数と、そのうち空でない行数と、最後の空でない行
+    let (mut len, mut filled, mut last) = (0, 0, 0);
     let mut prev_blank = true;
     for (i, line) in text.lines().enumerate() {
+        let n = i + 1;
         let blank = line.trim().is_empty();
         let top = !blank && !line.starts_with(char::is_whitespace);
-        let filled = cur.iter().filter(|l| !l.trim().is_empty()).count();
-        if (prev_blank && top && filled >= MIN_LINES) || (blank && cur.len() >= MAX_LINES) {
-            out.extend(finish(start, &cur));
-            cur.clear();
-        }
-        if cur.is_empty() {
-            start = i + 1;
-        }
-        if !(blank && cur.is_empty()) {
-            cur.push(line);
+        if (prev_blank && top && filled >= MIN_LINES) || (blank && len >= MAX_LINES) {
+            out.push((start, last));
+            (len, filled) = (0, 0);
         }
         prev_blank = blank;
+        if blank && len == 0 {
+            continue;
+        }
+        if len == 0 {
+            start = n;
+        }
+        len += 1;
+        if !blank {
+            filled += 1;
+            last = n;
+        }
     }
-    out.extend(finish(start, &cur));
+    if filled > 0 {
+        out.push((start, last));
+    }
     out
-}
-
-fn finish(start: usize, lines: &[&str]) -> Option<(usize, String)> {
-    let text = lines.join("\n");
-    let text = text.trim_end();
-    (!text.is_empty()).then(|| (start, text.chars().take(BLOCK_CHARS).collect()))
 }
 
 #[cfg(test)]
@@ -74,33 +80,31 @@ mod tests {
     #[test]
     fn split_by_top_level() {
         let src = "use a;\nuse b;\n\nconst X: u8 = 1;\n\n/// doc\nfn f() {\n    1;\n\n    2;\n}\n\n\nfn g() {\n}\n";
-        let got = split(src);
-        let starts: Vec<_> = got.iter().map(|(l, t)| (*l, t.lines().next().unwrap())).collect();
         // use と const は短いのでつながる。関数の中の空行では切らない
-        assert_eq!(starts, [(1, "use a;"), (6, "/// doc"), (14, "fn g() {")]);
-        assert!(got[1].1.ends_with("    2;\n}"));
+        assert_eq!(split(src), [(1, 4), (6, 11), (14, 15)]);
     }
 
     #[test]
     fn split_long_block_at_blank() {
         let body = "    x;\n".repeat(MAX_LINES) + "\n    y;\n";
         let got = split(&format!("impl A {{\n{body}}}\n"));
-        assert_eq!(got.len(), 2);
-        assert_eq!(got[1].0, MAX_LINES + 3);
+        assert_eq!(got, [(1, MAX_LINES + 1), (MAX_LINES + 3, MAX_LINES + 4)]);
     }
 
     #[test]
     fn read_skips_binary() {
         let d = std::env::temp_dir().join(format!("file-search-block-{}", std::process::id()));
         std::fs::create_dir_all(&d).unwrap();
-        std::fs::write(d.join("a.md"), "hello").unwrap();
+        std::fs::write(d.join("a.md"), "\nhello\n").unwrap();
         std::fs::write(d.join("bin"), [0xff, 0xfe, 0x00]).unwrap();
         std::fs::write(d.join("nul"), "a\0b").unwrap();
-        let a = Block::read(&d.join("a.md"));
-        let others = Block::read(&d.join("bin")).len() + Block::read(&d.join("nul")).len();
+        std::fs::write(d.join("empty"), "\n \n").unwrap();
+        let a = SourceFile::read(&d.join("a.md"));
+        let others = ["bin", "nul", "empty"].map(|f| SourceFile::read(&d.join(f)).is_none());
         std::fs::remove_dir_all(&d).unwrap();
-        assert_eq!(a.len(), 1);
-        assert_eq!((a[0].line, a[0].head()), (1, "hello"));
-        assert_eq!(others, 0);
+        let a = a.unwrap();
+        assert_eq!((a.blocks.len(), a.head(&a.blocks[0])), (1, "hello"));
+        assert_eq!(a.blocks[0].start, 2);
+        assert_eq!(others, [true; 3]);
     }
 }

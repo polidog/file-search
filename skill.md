@@ -5,7 +5,7 @@ description: Search source code by meaning rather than keywords with the file-se
 
 # file-search
 
-`file-search` cuts files into function-sized blocks, scores each block against a natural-language query with Jev, and prints the best matches as `path:line`.
+`file-search` cuts files into function-sized blocks, asks Jev for the probability that each block is what a natural-language query describes, and prints the matches as `path:line`.
 
 ## When to use
 
@@ -25,17 +25,17 @@ file-search "code that sends HTTP requests" src/http.rs src/provider
 rg -l "fn |def |function " | file-search "code that retries on failure"
 ```
 
-Output, best first (score 0–4, stars 1–5):
+Output, best first: probability, `path:line`, the block's first line.
 
 ```
-★★★★★ 3.7  src/http.rs:9  pub fn post<T: DeserializeOwned>(
-★★★★☆ 3.3  src/provider/cloudflare.rs:17  impl Provider for Cloudflare {
+0.97  src/http.rs:9  pub fn post<T: DeserializeOwned>(
+0.92  src/provider/vercel.rs:8  pub struct Vercel;
 ```
 
-Then read the listed `path:line` to confirm. Scores are judgments, not proof.
+Only results at or above `-t/--threshold` (default 0.5) are shown. Like grep, it exits 1 when nothing matches -- a real "not found", not an error. Read the listed `path:line` to confirm; a probability is a judgment, not proof.
 
 ## Notes
 
-- Every run calls the Jev API; each block costs. Scope to a subdirectory or pipe from `rg -l` on large repos. `-m/--max` (default 1000) caps the number of blocks scored.
+- Every run calls the Jev API. `--dry-run` prints the request count, input tokens and an estimated price without sending anything; a run over ~1000 blocks is typically a few cents. Scope to a subdirectory or pipe from `rg -l` on large repos. `-m/--max` (default 1000) caps the number of blocks scored.
 - Needs `TYPESAFE_API_KEY` (or `-p cloudflare` / `-p vercel` with their credentials; see https://github.com/polidog/jev#providers).
 - Hidden entries and `target` / `node_modules` / `vendor` are skipped when walking directories.
