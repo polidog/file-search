@@ -35,7 +35,7 @@ rg -l "fn " | file-search "code that sends HTTP requests"
 | --- | --- | --- |
 | `PATH...` | stdin, else `.` | Files or directories to search (several allowed). Omit them and pipe paths on stdin instead |
 | `-n`, `--num` | `10` | Number of results to show |
-| `-m`, `--max` | `200` | Maximum number of blocks to score (caps API usage) |
+| `-m`, `--max` | `1000` | Maximum number of blocks to score (caps API usage) |
 | `-p`, `--provider` | `typesafe` | `typesafe` / `cloudflare` / `vercel` (or `JEV_PROVIDER`) |
 
 See [polidog/jev](https://github.com/polidog/jev#providers) for each provider's environment variables.
@@ -57,7 +57,7 @@ file-search --install-skill codex    # ~/.codex/skills/file-search/SKILL.md
 - Files over 1 MiB are skipped.
 - Each file is cut at non-indented lines that follow a blank line (roughly: top-level items). Blocks shorter than 3 lines are merged into the next; blocks over 40 lines are cut at the next blank line. Methods inside `impl` / `class` are not split individually.
 - Each block is truncated to 1000 characters.
-- Blocks are sent 20 per request, with up to 8 requests in flight.
+- Each block is scored in its own request, so its score does not depend on which other blocks were sent. Up to 16 requests run in parallel (about 1000 blocks in 12 seconds).
 
 ## License
 

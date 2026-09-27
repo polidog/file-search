@@ -36,6 +36,6 @@ Then read the listed `path:line` to confirm. Scores are judgments, not proof.
 
 ## Notes
 
-- Every run calls the Jev API; each block costs. Scope to a subdirectory or pipe from `rg -l` on large repos. `-m/--max` (default 200) caps the number of blocks scored.
+- Every run calls the Jev API; each block costs. Scope to a subdirectory or pipe from `rg -l` on large repos. `-m/--max` (default 1000) caps the number of blocks scored.
 - Needs `TYPESAFE_API_KEY` (or `-p cloudflare` / `-p vercel` with their credentials; see https://github.com/polidog/jev#providers).
 - Hidden entries and `target` / `node_modules` / `vendor` are skipped when walking directories.
