@@ -2,7 +2,7 @@
 name = "file-search"
 version = "0.1.0"
 edition = "2024"
-description = "Find files whose content matches a query in meaning, scored by Jev"
+description = "Search source code by meaning, scored by Jev"
 license = "MIT"
 repository = "https://github.com/polidog/file-search"
 
