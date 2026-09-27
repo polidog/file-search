@@ -6,6 +6,10 @@
 
 ## インストール
 
+[Releases](https://github.com/polidog/file-search/releases/latest) から、Linux（x86_64 / aarch64、静的リンク）・macOS（Intel / Apple Silicon）・Windows 向けのバイナリを落として展開し、`file-search` を `PATH` の通った場所に置いてください。
+
+Cargo でビルドすることもできます。
+
 ```bash
 cargo install --git https://github.com/polidog/file-search
 ```

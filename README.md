@@ -6,6 +6,10 @@ Search source code **by meaning**, not keywords: "where do we swallow errors?", 
 
 ## Installation
 
+Download a binary for Linux (x86_64 / aarch64, static), macOS (Intel / Apple Silicon) or Windows from [Releases](https://github.com/polidog/file-search/releases/latest), extract it, and put `file-search` on your `PATH`.
+
+Or build it with Cargo:
+
 ```bash
 cargo install --git https://github.com/polidog/file-search
 ```

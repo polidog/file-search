@@ -25,8 +25,7 @@ impl Agent {
         if let Some(p) = std::env::var_os(var) {
             return Ok(p.into());
         }
-        let home = std::env::var_os("HOME").context("HOME が設定されていません")?;
-        Ok(Path::new(&home).join(dir))
+        Ok(std::env::home_dir().context("ホームディレクトリが分かりません")?.join(dir))
     }
 }
 

@@ -1,0 +1,40 @@
+# リリースを公開すると、各 OS 向けのバイナリをビルドしてそのリリースに添付する。
+# 既存のリリースに付け直すときは Actions 画面から tag を指定して手動実行する
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: バイナリを添付するリリースのタグ (例 v0.1.1)
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  upload:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: x86_64-unknown-linux-musl, os: ubuntu-latest }
+          - { target: aarch64-unknown-linux-musl, os: ubuntu-latest }
+          - { target: x86_64-apple-darwin, os: macos-latest }
+          - { target: aarch64-apple-darwin, os: macos-latest }
+          - { target: x86_64-pc-windows-msvc, os: windows-latest }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ inputs.tag || github.event.release.tag_name }}
+      - uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: file-search
+          target: ${{ matrix.target }}
+          ref: refs/tags/${{ inputs.tag || github.event.release.tag_name }}
+          archive: $bin-$tag-$target
+          checksum: sha256
+          token: ${{ secrets.GITHUB_TOKEN }}
