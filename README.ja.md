@@ -76,6 +76,8 @@ file-search --install-skill codex    # ~/.codex/skills/file-search/SKILL.md
 - 最大 16 リクエストを同時に送ります。429 と 5xx は間を空けて投げ直します（1, 2, 4, 8, 16 秒）。
 - リクエストの組み方は、[mizchi/jev-lint](https://github.com/mizchi/jev-lint) が Jev について測った知見に沿っています。`--dry-run` の料金もその実測値（入力 100 万トークンあたり約 $0.042）から出す目安で、請求額そのものではありません。
 
+参考にしたリポジトリは [references.json](references.json) にまとめています。
+
 ## ライセンス
 
 [MIT](LICENSE)

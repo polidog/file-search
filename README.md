@@ -76,6 +76,8 @@ file-search --install-skill codex    # ~/.codex/skills/file-search/SKILL.md
 - Up to 16 requests run in parallel. 429 and 5xx responses are retried with backoff (1, 2, 4, 8, 16 s).
 - The request shape follows what [mizchi/jev-lint](https://github.com/mizchi/jev-lint) measured about Jev. The price in `--dry-run` uses its measured rate (about $0.042 per million input tokens) and is an estimate, not a quote.
 
+Repositories this project drew on are listed in [references.json](references.json).
+
 ## License
 
 [MIT](LICENSE)

@@ -1,0 +1,36 @@
+[
+  {
+    "repository": "mizchi/jev-lint",
+    "url": "https://github.com/mizchi/jev-lint",
+    "license": "MIT",
+    "used_for": [
+      "Ask a noul (probability) instead of an ordered score, with criteria nested under {true, false}",
+      "Put the whole file with line numbers in the state and point questions at line ranges; never mix files in one state",
+      "State limit of 32,768 tokens, bare 429 on rate limiting (retry with backoff)",
+      "Per-request overhead (~270 tokens) and the measured price used by --dry-run"
+    ],
+    "files": [
+      "src/questions.ts",
+      "src/state.ts",
+      "src/jev.ts",
+      "docs/deepdive.md",
+      "docs/cost.md"
+    ]
+  },
+  {
+    "repository": "polidog/jev",
+    "url": "https://github.com/polidog/jev",
+    "license": "MIT",
+    "used_for": [
+      "Jev client library: request/response types and the typesafe / cloudflare / vercel providers"
+    ]
+  },
+  {
+    "repository": "taiki-e/upload-rust-binary-action",
+    "url": "https://github.com/taiki-e/upload-rust-binary-action",
+    "license": "Apache-2.0",
+    "used_for": [
+      "Building and attaching release binaries in .github/workflows/release.yml"
+    ]
+  }
+]
