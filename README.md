@@ -40,6 +40,17 @@ rg -l "fn " | file-search "code that sends HTTP requests"
 
 See [polidog/jev](https://github.com/polidog/jev#providers) for each provider's environment variables.
 
+## Agent skill
+
+Install a skill that teaches Claude Code or Codex when and how to call `file-search`:
+
+```bash
+file-search --install-skill claude   # ~/.claude/skills/file-search/SKILL.md
+file-search --install-skill codex    # ~/.codex/skills/file-search/SKILL.md
+```
+
+`CLAUDE_CONFIG_DIR` / `CODEX_HOME` are respected. Re-running overwrites the file with the version bundled in the binary.
+
 ## How it works
 
 - Walks each directory in `PATH`, skipping hidden entries and `target` / `node_modules` / `vendor`. Binary and non-UTF-8 files are ignored. `.gitignore` is not read.

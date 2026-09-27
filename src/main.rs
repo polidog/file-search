@@ -1,5 +1,5 @@
 use anyhow::{Context, Result, bail};
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use jev::cli::ProviderKind;
 use jev::model::{Answer, Question, Request};
 use jev::provider;
@@ -22,6 +22,7 @@ const CHUNK: usize = 20;
 /// 同時に投げるリクエスト数
 const PARALLEL: usize = 8;
 const SKIP_DIRS: [&str; 3] = ["target", "node_modules", "vendor"];
+const SKILL: &str = include_str!("../skill.md");
 
 /// ソースコードを関数くらいの塊に切って Jev で採点し、探したい内容と意味が近い順に並べる
 ///
@@ -30,7 +31,8 @@ const SKIP_DIRS: [&str; 3] = ["target", "node_modules", "vendor"];
 #[command(version)]
 struct Cli {
     /// 探したい内容 (自然文でよい)
-    query: String,
+    #[arg(required_unless_present = "install_skill")]
+    query: Option<String>,
     /// 探すファイルかディレクトリ。複数可 (省略時、標準入力がパイプならそこからパスを読む。でなければ .)
     paths: Vec<PathBuf>,
     /// 表示件数
@@ -41,6 +43,30 @@ struct Cli {
     max: usize,
     #[arg(short, long, env = "JEV_PROVIDER", value_enum, default_value_t = ProviderKind::Typesafe)]
     provider: ProviderKind,
+    /// このコマンドを使うスキルを ~/.claude/skills か ~/.codex/skills に書き出して終わる
+    #[arg(long, value_enum, value_name = "AGENT", conflicts_with_all = ["query", "paths"])]
+    install_skill: Option<Agent>,
+}
+
+#[derive(Clone, Copy, ValueEnum)]
+enum Agent {
+    Claude,
+    Codex,
+}
+
+impl Agent {
+    /// エージェントの設定ディレクトリ。環境変数で移していればそちら
+    fn home(self) -> Result<PathBuf> {
+        let (var, dir) = match self {
+            Agent::Claude => ("CLAUDE_CONFIG_DIR", ".claude"),
+            Agent::Codex => ("CODEX_HOME", ".codex"),
+        };
+        if let Some(p) = std::env::var_os(var) {
+            return Ok(p.into());
+        }
+        let home = std::env::var_os("HOME").context("HOME が設定されていません")?;
+        Ok(Path::new(&home).join(dir))
+    }
 }
 
 struct Block {
@@ -52,6 +78,12 @@ struct Block {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+    if let Some(agent) = cli.install_skill {
+        let path = install_skill(&agent.home()?)?;
+        println!("{}", path.display());
+        return Ok(());
+    }
+    let query = cli.query.expect("clap が query を必須にしている");
     let roots = if !cli.paths.is_empty() {
         cli.paths
     } else if !std::io::stdin().is_terminal() {
@@ -74,7 +106,7 @@ fn main() -> Result<()> {
         eprintln!("{} 塊で打ち切りました (--max で増やせます)", cli.max);
     }
 
-    let scores = score_all(cli.provider, &cli.query, &blocks)?;
+    let scores = score_all(cli.provider, &query, &blocks)?;
     let mut ranked: Vec<_> = scores.into_iter().zip(&blocks).collect();
     ranked.sort_unstable_by(|a, b| b.0.total_cmp(&a.0));
     for (score, b) in ranked.into_iter().take(cli.num) {
@@ -82,6 +114,15 @@ fn main() -> Result<()> {
         println!("{} {score:.1}  {}:{}  {head}", stars(score), b.path.display(), b.line);
     }
     Ok(())
+}
+
+/// base/skills/file-search/SKILL.md に書き出し、そのパスを返す (既にあれば上書き)
+fn install_skill(base: &Path) -> Result<PathBuf> {
+    let dir = base.join("skills/file-search");
+    std::fs::create_dir_all(&dir).with_context(|| format!("{} を作れません", dir.display()))?;
+    let path = dir.join("SKILL.md");
+    std::fs::write(&path, SKILL).with_context(|| format!("{} に書けません", path.display()))?;
+    Ok(path)
 }
 
 /// ディレクトリは中のファイルに展開し、ファイルはそのまま使う
@@ -225,6 +266,17 @@ mod tests {
         let r = request("q", &blocks);
         assert_eq!(r.state, json!("Looking for: q\n\n[r0] a.rs:3\ns\n"));
         assert!(r.questions.contains_key("r0"));
+    }
+
+    #[test]
+    fn skill() {
+        assert!(SKILL.starts_with("---\nname: file-search\ndescription: "));
+        let d = std::env::temp_dir().join(format!("file-search-skill-{}", std::process::id()));
+        let path = install_skill(&d).unwrap();
+        let written = std::fs::read_to_string(&path).unwrap();
+        std::fs::remove_dir_all(&d).unwrap();
+        assert_eq!(path, d.join("skills/file-search/SKILL.md"));
+        assert_eq!(written, SKILL);
     }
 
     #[test]

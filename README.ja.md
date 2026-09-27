@@ -40,6 +40,17 @@ rg -l "fn " | file-search "HTTP リクエストを送っている関数"
 
 プロバイダごとの環境変数は [polidog/jev](https://github.com/polidog/jev#providers) を見てください。
 
+## エージェント用スキル
+
+Claude Code や Codex に、`file-search` をいつ・どう使うかを教えるスキルを書き出せます。
+
+```bash
+file-search --install-skill claude   # ~/.claude/skills/file-search/SKILL.md
+file-search --install-skill codex    # ~/.codex/skills/file-search/SKILL.md
+```
+
+`CLAUDE_CONFIG_DIR` / `CODEX_HOME` を設定していればそちらに書きます。もう一度実行すると、バイナリに入っている版で上書きします。
+
 ## しくみ
 
 - `PATH` のディレクトリを辿ります。隠しファイルと `target` / `node_modules` / `vendor` は飛ばし、バイナリと UTF-8 でないファイルは無視します。`.gitignore` は読みません。
