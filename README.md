@@ -13,6 +13,8 @@ cargo install --git https://github.com/polidog/file-search
 ```bash
 export TYPESAFE_API_KEY=...
 file-search "code that sends HTTP requests" ~/src/jev/src -n 3
+# files and directories can be mixed
+file-search "code that sends HTTP requests" src/http.rs src/provider
 ```
 
 ```
@@ -29,7 +31,7 @@ rg -l "fn " | file-search "code that sends HTTP requests"
 
 | Option | Default | |
 | --- | --- | --- |
-| `DIR` | stdin, else `.` | Directory to search. Omit it and pipe paths on stdin to search only those files |
+| `PATH...` | stdin, else `.` | Files or directories to search (several allowed). Omit them and pipe paths on stdin instead |
 | `-n`, `--num` | `10` | Number of results to show |
 | `-m`, `--max` | `200` | Maximum number of blocks to score (caps API usage) |
 | `-p`, `--provider` | `typesafe` | `typesafe` / `cloudflare` / `vercel` (or `JEV_PROVIDER`) |
@@ -38,7 +40,7 @@ See [polidog/jev](https://github.com/polidog/jev#providers) for each provider's 
 
 ## How it works
 
-- Walks `DIR`, skipping hidden entries and `target` / `node_modules` / `vendor`. Binary and non-UTF-8 files are ignored. `.gitignore` is not read.
+- Walks each directory in `PATH`, skipping hidden entries and `target` / `node_modules` / `vendor`. Binary and non-UTF-8 files are ignored. `.gitignore` is not read.
 - Files over 1 MiB are skipped.
 - Each file is cut at non-indented lines that follow a blank line (roughly: top-level items). Blocks shorter than 3 lines are merged into the next; blocks over 40 lines are cut at the next blank line. Methods inside `impl` / `class` are not split individually.
 - Each block is truncated to 1000 characters.

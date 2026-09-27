@@ -25,14 +25,14 @@ const SKIP_DIRS: [&str; 3] = ["target", "node_modules", "vendor"];
 
 /// ソースコードを関数くらいの塊に切って Jev で採点し、探したい内容と意味が近い順に並べる
 ///
-/// 標準入力にパスを流すと、ディレクトリを探さずにそれを使う (例: rg -l retry | file-search "リトライしている処理")
+/// パスを省略して標準入力にパスを流すと、それを使う (例: rg -l retry | file-search "リトライしている処理")
 #[derive(Parser)]
 #[command(version)]
 struct Cli {
     /// 探したい内容 (自然文でよい)
     query: String,
-    /// 探すディレクトリ (省略時、標準入力がパイプならそこからパスを読む。でなければ .)
-    dir: Option<PathBuf>,
+    /// 探すファイルかディレクトリ。複数可 (省略時、標準入力がパイプならそこからパスを読む。でなければ .)
+    paths: Vec<PathBuf>,
     /// 表示件数
     #[arg(short, long, default_value_t = 10)]
     num: usize,
@@ -52,17 +52,18 @@ struct Block {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    let paths = match &cli.dir {
-        Some(dir) => walk_root(dir)?,
-        None if !std::io::stdin().is_terminal() => {
-            let paths: Vec<PathBuf> = std::io::stdin().lock().lines().map_while(Result::ok).map(PathBuf::from).collect();
-            if paths.is_empty() {
-                bail!("標準入力にパスがありません");
-            }
-            paths
+    let roots = if !cli.paths.is_empty() {
+        cli.paths
+    } else if !std::io::stdin().is_terminal() {
+        let paths: Vec<PathBuf> = std::io::stdin().lock().lines().map_while(Result::ok).map(PathBuf::from).collect();
+        if paths.is_empty() {
+            bail!("標準入力にパスがありません");
         }
-        None => walk_root(Path::new("."))?,
+        paths
+    } else {
+        vec![PathBuf::from(".")]
     };
+    let paths = expand(&roots)?;
 
     let mut rest = paths.iter().flat_map(|p| read_blocks(p));
     let blocks: Vec<Block> = rest.by_ref().take(cli.max).collect();
@@ -83,9 +84,17 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn walk_root(dir: &Path) -> Result<Vec<PathBuf>> {
+/// ディレクトリは中のファイルに展開し、ファイルはそのまま使う
+fn expand(roots: &[PathBuf]) -> Result<Vec<PathBuf>> {
     let mut paths = Vec::new();
-    walk(dir, &mut paths).with_context(|| format!("{} を読めません", dir.display()))?;
+    for root in roots {
+        let meta = std::fs::metadata(root).with_context(|| format!("{} を読めません", root.display()))?;
+        if meta.is_dir() {
+            walk(root, &mut paths).with_context(|| format!("{} を読めません", root.display()))?;
+        } else {
+            paths.push(root.clone());
+        }
+    }
     Ok(paths)
 }
 
@@ -237,7 +246,7 @@ mod tests {
     }
 
     #[test]
-    fn walk_and_read() {
+    fn expand_and_read() {
         let d = std::env::temp_dir().join(format!("file-search-{}", std::process::id()));
         std::fs::create_dir_all(d.join(".git")).unwrap();
         std::fs::create_dir_all(d.join("target")).unwrap();
@@ -246,12 +255,14 @@ mod tests {
         std::fs::write(d.join("target/y"), "no").unwrap();
         std::fs::write(d.join("bin"), [0xff, 0xfe, 0x00]).unwrap();
         std::fs::write(d.join("nul"), "a\0b").unwrap();
-        let mut paths = Vec::new();
-        walk(&d, &mut paths).unwrap();
+        let paths = expand(&[d.clone(), d.join("target/y")]).unwrap();
+        assert!(expand(&[d.join("missing")]).is_err());
         let blocks: Vec<_> = paths.iter().flat_map(|p| read_blocks(p)).collect();
         std::fs::remove_dir_all(&d).unwrap();
-        assert_eq!(blocks.len(), 1);
+        // ディレクトリからは隠し・target を飛ばすが、名指ししたファイルは読む
+        assert_eq!(blocks.len(), 2);
         assert!(blocks[0].path.ends_with("a.md"));
+        assert!(blocks[1].path.ends_with("target/y"));
         assert_eq!((blocks[0].line, blocks[0].text.as_str()), (1, "hello"));
     }
 }
