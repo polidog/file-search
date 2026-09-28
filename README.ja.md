@@ -1,4 +1,4 @@
-# file-search
+# jev-sift
 
 [English](README.md) | [日本語](README.ja.md)
 
@@ -6,21 +6,21 @@
 
 ## インストール
 
-[Releases](https://github.com/polidog/file-search/releases/latest) から、Linux（x86_64 / aarch64、静的リンク）・macOS（Intel / Apple Silicon）・Windows 向けのバイナリを落として展開し、`file-search` を `PATH` の通った場所に置いてください。
+[Releases](https://github.com/polidog/jev-sift/releases/latest) から、Linux（x86_64 / aarch64、静的リンク）・macOS（Intel / Apple Silicon）・Windows 向けのバイナリを落として展開し、`jev-sift` を `PATH` の通った場所に置いてください。
 
 Cargo でビルドすることもできます。
 
 ```bash
-cargo install --git https://github.com/polidog/file-search
+cargo install --git https://github.com/polidog/jev-sift
 ```
 
 ## 使い方
 
 ```bash
 export TYPESAFE_API_KEY=...
-file-search "HTTP リクエストを送っている関数" ~/src/jev/src -n 3
+jev-sift "HTTP リクエストを送っている関数" ~/src/jev/src -n 3
 # ファイルとディレクトリを混ぜて渡せる
-file-search "HTTP リクエストを送っている関数" src/http.rs src/provider
+jev-sift "HTTP リクエストを送っている関数" src/http.rs src/provider
 ```
 
 ```
@@ -34,13 +34,13 @@ file-search "HTTP リクエストを送っている関数" src/http.rs src/provi
 ファイルの一覧をパイプで渡すと、候補を先に絞れます（`.gitignore` も効きます）。
 
 ```bash
-rg -l "fn " | file-search "HTTP リクエストを送っている関数"
+rg -l "fn " | jev-sift "HTTP リクエストを送っている関数"
 ```
 
 送る前に料金の目安を出せます。
 
 ```bash
-file-search "エラーを握りつぶしている箇所" src --dry-run
+jev-sift "エラーを握りつぶしている箇所" src --dry-run
 # 39 ファイル / 1007 塊 / 40 リクエスト / 入力 約 502585 トークン / 約 $0.0211
 ```
 
@@ -57,11 +57,11 @@ file-search "エラーを握りつぶしている箇所" src --dry-run
 
 ## エージェント用スキル
 
-Claude Code や Codex に、`file-search` をいつ・どう使うかを教えるスキルを書き出せます。
+Claude Code や Codex に、`jev-sift` をいつ・どう使うかを教えるスキルを書き出せます。
 
 ```bash
-file-search --install-skill claude   # ~/.claude/skills/file-search/SKILL.md
-file-search --install-skill codex    # ~/.codex/skills/file-search/SKILL.md
+jev-sift --install-skill claude   # ~/.claude/skills/jev-sift/SKILL.md
+jev-sift --install-skill codex    # ~/.codex/skills/jev-sift/SKILL.md
 ```
 
 `CLAUDE_CONFIG_DIR` / `CODEX_HOME` を設定していればそちらに書きます。もう一度実行すると、バイナリに入っている版で上書きします。

@@ -1,4 +1,4 @@
-# file-search
+# jev-sift
 
 [English](README.md) | [日本語](README.ja.md)
 
@@ -6,21 +6,21 @@ Search source code **by meaning**, not keywords: "where do we swallow errors?", 
 
 ## Installation
 
-Download a binary for Linux (x86_64 / aarch64, static), macOS (Intel / Apple Silicon) or Windows from [Releases](https://github.com/polidog/file-search/releases/latest), extract it, and put `file-search` on your `PATH`.
+Download a binary for Linux (x86_64 / aarch64, static), macOS (Intel / Apple Silicon) or Windows from [Releases](https://github.com/polidog/jev-sift/releases/latest), extract it, and put `jev-sift` on your `PATH`.
 
 Or build it with Cargo:
 
 ```bash
-cargo install --git https://github.com/polidog/file-search
+cargo install --git https://github.com/polidog/jev-sift
 ```
 
 ## Usage
 
 ```bash
 export TYPESAFE_API_KEY=...
-file-search "code that sends HTTP requests" ~/src/jev/src -n 3
+jev-sift "code that sends HTTP requests" ~/src/jev/src -n 3
 # files and directories can be mixed
-file-search "code that sends HTTP requests" src/http.rs src/provider
+jev-sift "code that sends HTTP requests" src/http.rs src/provider
 ```
 
 ```
@@ -34,13 +34,13 @@ Each line is the probability, `path:line`, and the block's first line. Like grep
 Pipe a file list to narrow the candidates first (and respect `.gitignore`):
 
 ```bash
-rg -l "fn " | file-search "code that sends HTTP requests"
+rg -l "fn " | jev-sift "code that sends HTTP requests"
 ```
 
 Price a run before sending anything:
 
 ```bash
-file-search "where errors are swallowed" src --dry-run
+jev-sift "where errors are swallowed" src --dry-run
 # 39 files / 1007 blocks / 40 requests / ~502585 input tokens / ~$0.0211
 ```
 
@@ -57,11 +57,11 @@ See [polidog/jev](https://github.com/polidog/jev#providers) for each provider's 
 
 ## Agent skill
 
-Install a skill that teaches Claude Code or Codex when and how to call `file-search`:
+Install a skill that teaches Claude Code or Codex when and how to call `jev-sift`:
 
 ```bash
-file-search --install-skill claude   # ~/.claude/skills/file-search/SKILL.md
-file-search --install-skill codex    # ~/.codex/skills/file-search/SKILL.md
+jev-sift --install-skill claude   # ~/.claude/skills/jev-sift/SKILL.md
+jev-sift --install-skill codex    # ~/.codex/skills/jev-sift/SKILL.md
 ```
 
 `CLAUDE_CONFIG_DIR` / `CODEX_HOME` are respected. Re-running overwrites the file with the version bundled in the binary.

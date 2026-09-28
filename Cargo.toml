@@ -1,10 +1,10 @@
 [package]
-name = "file-search"
+name = "jev-sift"
 version = "0.1.1"
 edition = "2024"
 description = "Search source code by meaning, scored by Jev"
 license = "MIT"
-repository = "https://github.com/polidog/file-search"
+repository = "https://github.com/polidog/jev-sift"
 
 [dependencies]
 anyhow = "1.0.104"

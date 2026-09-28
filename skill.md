@@ -1,11 +1,11 @@
 ---
-name: file-search
-description: Search source code by meaning rather than keywords with the file-search CLI. Use when looking for code by what it does or how it behaves ("where are errors swallowed", "code that retries", "functions that write to the database") and grep would need guessing the exact identifiers.
+name: jev-sift
+description: Search source code by meaning rather than keywords with the jev-sift CLI. Use when looking for code by what it does or how it behaves ("where are errors swallowed", "code that retries", "functions that write to the database") and grep would need guessing the exact identifiers.
 ---
 
-# file-search
+# jev-sift
 
-`file-search` cuts files into function-sized blocks, asks Jev for the probability that each block is what a natural-language query describes, and prints the matches as `path:line`.
+`jev-sift` cuts files into function-sized blocks, asks Jev for the probability that each block is what a natural-language query describes, and prints the matches as `path:line`.
 
 ## When to use
 
@@ -18,11 +18,11 @@ If you already know the identifier, use `rg` instead — it is faster and free.
 
 ```bash
 # a directory, files, or both
-file-search "where errors are swallowed" src -n 5
-file-search "code that sends HTTP requests" src/http.rs src/provider
+jev-sift "where errors are swallowed" src -n 5
+jev-sift "code that sends HTTP requests" src/http.rs src/provider
 
 # narrow the candidates with rg first (respects .gitignore, cheaper)
-rg -l "fn |def |function " | file-search "code that retries on failure"
+rg -l "fn |def |function " | jev-sift "code that retries on failure"
 ```
 
 Output, best first: probability, `path:line`, the block's first line.

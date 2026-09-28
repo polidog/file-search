@@ -32,7 +32,7 @@ jobs:
           ref: refs/tags/${{ inputs.tag || github.event.release.tag_name }}
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
-          bin: file-search
+          bin: jev-sift
           target: ${{ matrix.target }}
           ref: refs/tags/${{ inputs.tag || github.event.release.tag_name }}
           archive: $bin-$tag-$target

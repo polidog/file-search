@@ -29,9 +29,9 @@ impl Agent {
     }
 }
 
-/// base/skills/file-search/SKILL.md に書き出し、そのパスを返す (既にあれば上書き)
+/// base/skills/jev-sift/SKILL.md に書き出し、そのパスを返す (既にあれば上書き)
 fn install(base: &Path) -> Result<PathBuf> {
-    let dir = base.join("skills/file-search");
+    let dir = base.join("skills/jev-sift");
     std::fs::create_dir_all(&dir).with_context(|| format!("{} を作れません", dir.display()))?;
     let path = dir.join("SKILL.md");
     std::fs::write(&path, SKILL).with_context(|| format!("{} に書けません", path.display()))?;
@@ -44,12 +44,12 @@ mod tests {
 
     #[test]
     fn install_writes_skill() {
-        assert!(SKILL.starts_with("---\nname: file-search\ndescription: "));
-        let d = std::env::temp_dir().join(format!("file-search-skill-{}", std::process::id()));
+        assert!(SKILL.starts_with("---\nname: jev-sift\ndescription: "));
+        let d = std::env::temp_dir().join(format!("jev-sift-skill-{}", std::process::id()));
         let path = install(&d).unwrap();
         let written = std::fs::read_to_string(&path).unwrap();
         std::fs::remove_dir_all(&d).unwrap();
-        assert_eq!(path, d.join("skills/file-search/SKILL.md"));
+        assert_eq!(path, d.join("skills/jev-sift/SKILL.md"));
         assert_eq!(written, SKILL);
     }
 }

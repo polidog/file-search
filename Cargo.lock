@@ -209,16 +209,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
-name = "file-search"
-version = "0.1.1"
-dependencies = [
- "anyhow",
- "clap",
- "jev",
- "serde_json",
-]
-
-[[package]]
 name = "find-msvc-tools"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -422,6 +412,16 @@ dependencies = [
  "serde",
  "serde_json",
  "ureq",
+]
+
+[[package]]
+name = "jev-sift"
+version = "0.1.1"
+dependencies = [
+ "anyhow",
+ "clap",
+ "jev",
+ "serde_json",
 ]
 
 [[package]]

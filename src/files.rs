@@ -47,7 +47,7 @@ mod tests {
 
     #[test]
     fn expand_skips_hidden_and_build_dirs() {
-        let d = std::env::temp_dir().join(format!("file-search-files-{}", std::process::id()));
+        let d = std::env::temp_dir().join(format!("jev-sift-files-{}", std::process::id()));
         std::fs::create_dir_all(d.join(".git")).unwrap();
         std::fs::create_dir_all(d.join("target")).unwrap();
         std::fs::write(d.join("a.md"), "").unwrap();

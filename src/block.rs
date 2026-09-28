@@ -93,7 +93,7 @@ mod tests {
 
     #[test]
     fn read_skips_binary() {
-        let d = std::env::temp_dir().join(format!("file-search-block-{}", std::process::id()));
+        let d = std::env::temp_dir().join(format!("jev-sift-block-{}", std::process::id()));
         std::fs::create_dir_all(&d).unwrap();
         std::fs::write(d.join("a.md"), "\nhello\n").unwrap();
         std::fs::write(d.join("bin"), [0xff, 0xfe, 0x00]).unwrap();
