@@ -4,6 +4,21 @@
 
 Search source code **by meaning**, not keywords: "where do we swallow errors?", "code that retries". Files are cut into function-sized blocks, and for each block the probability that it is what you are looking for is asked of [Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev), the System One model from [TypeSafe AI](https://typesafe.ai/), via [polidog/jev](https://github.com/polidog/jev).
 
+## What it is good at
+
+Measured against Claude Code (Sonnet):
+
+- **To find one place, asking Claude Code is more reliable.** On [cli/cli](https://github.com/cli/cli) (1,000 Go files), Claude Code answered all 7 "where does it do X?" questions without jev-sift. Making it use jev-sift did not change the answers and cost 16% more. jev-sift helps when a person wants a lead in 1–3 seconds for a few cents.
+- **Sifting out everything that matches from a large set is where it shines.** On [banking77](https://github.com/PolyAI-LDN/task-specific-datasets) (10,003 customer queries to a bank), each tool was asked to list every query matching three questions.
+
+  | | F1 | Price per question | Time per question |
+  | --- | --- | --- | --- |
+  | jev-sift (threshold 0.5) | 0.58–0.67 | ~$0.09 | 2–4 s |
+  | jev-sift (threshold tuned per question) | 0.61–0.80 | ~$0.09 | 2–4 s |
+  | Claude Code | 0.71–0.83 | $1.1–3.9 | 3–8 min |
+
+  Claude Code's best question had five subagents read every row, for $3.9. The gap widens with the number of rows. Raise `-n` when you want everything.
+
 ## Installation
 
 Download a binary for Linux (x86_64 / aarch64, static), macOS (Intel / Apple Silicon) or Windows from [Releases](https://github.com/polidog/jev-sift/releases/latest), extract it, and put `jev-sift` on your `PATH`.
@@ -65,6 +80,8 @@ jev-sift --install-skill codex    # ~/.codex/skills/jev-sift/SKILL.md
 ```
 
 `CLAUDE_CONFIG_DIR` / `CODEX_HOME` are respected. Re-running overwrites the file with the version bundled in the binary.
+
+In the cli/cli measurement above, Claude Code never called jev-sift on its own with the skill installed (0 of 7), because rg was enough for those questions.
 
 ## How it works
 

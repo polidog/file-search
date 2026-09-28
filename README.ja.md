@@ -4,6 +4,21 @@
 
 ソースコードをキーワードではなく**意味**で探します。「エラーを握りつぶしている箇所」「リトライしている処理」のように、grep では書けない問いで引けます。ファイルを関数くらいの塊に切り、塊ごとに「探しているものか」の確率を [TypeSafe AI](https://typesafe.ai/) の System One モデル [Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev) に聞きます（[polidog/jev](https://github.com/polidog/jev) 経由）。
 
+## 向いているところ
+
+Claude Code（Sonnet）と比べて測りました。
+
+- **1 か所を探すなら、Claude Code に聞くほうが確かです。** [cli/cli](https://github.com/cli/cli)（Go 1,000 ファイル）で「〜しているのはどこ？」を 7 問聞くと、Claude Code は jev-sift なしで 7 問とも当てました。jev-sift を使わせても正答は変わらず、料金が 16% 増えました。jev-sift が役に立つのは、人が 1〜3 秒・数セントで当たりをつけたいときです。
+- **たくさんの中から、当てはまるものを全部ふるい出すのは得意です。** [banking77](https://github.com/PolyAI-LDN/task-specific-datasets)（銀行への問い合わせ 10,003 件）で、3 つの問いに当てはまる問い合わせを全部挙げさせました。
+
+  | | F1 | 料金（1 問） | 時間（1 問） |
+  | --- | --- | --- | --- |
+  | jev-sift（閾値 0.5） | 0.58〜0.67 | 約 $0.09 | 2〜4 秒 |
+  | jev-sift（閾値を問いごとに調整） | 0.61〜0.80 | 約 $0.09 | 2〜4 秒 |
+  | Claude Code | 0.71〜0.83 | $1.1〜3.9 | 3〜8 分 |
+
+  Claude Code がいちばん良かった問いは、サブエージェント 5 つに全件を読ませて $3.9 かかっていました。件数が増えるほど差は開きます。全部を出すときは `-n` を大きくしてください。
+
 ## インストール
 
 [Releases](https://github.com/polidog/jev-sift/releases/latest) から、Linux（x86_64 / aarch64、静的リンク）・macOS（Intel / Apple Silicon）・Windows 向けのバイナリを落として展開し、`jev-sift` を `PATH` の通った場所に置いてください。
@@ -65,6 +80,8 @@ jev-sift --install-skill codex    # ~/.codex/skills/jev-sift/SKILL.md
 ```
 
 `CLAUDE_CONFIG_DIR` / `CODEX_HOME` を設定していればそちらに書きます。もう一度実行すると、バイナリに入っている版で上書きします。
+
+上の cli/cli の測定では、スキルを入れても Claude Code は自分から jev-sift を呼びませんでした（7 問中 0 回）。rg で足りる問いだったためです。
 
 ## しくみ
 
