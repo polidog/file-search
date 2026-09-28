@@ -7,6 +7,7 @@
       "Ask a noul (probability) instead of an ordered score, with criteria nested under {true, false}",
       "Put the whole file with line numbers in the state and point questions at line ranges; never mix files in one state",
       "State limit of 32,768 tokens, bare 429 on rate limiting (retry with backoff)",
+      "Split the question set in half and resend when the server answers max_tokens_exceeded, since the ceiling is 64Ki tokens per request, not a question count",
       "Per-request overhead (~270 tokens) and the measured price used by --dry-run"
     ],
     "files": [

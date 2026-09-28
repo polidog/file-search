@@ -2,11 +2,12 @@
 //! - 順序のある 5 段階ではなく、「当てはまるか」を noul (確率) で聞く。criteria は必ず {true, false} の入れ子にする
 //! - state にはファイル全体を入れ、塊は行番号で指す。周りのコードが見えるほうが判定が安定し、
 //!   ファイルを 1 回送るだけで済むので安い。別のファイルの塊は同じ state に混ぜない
-//! - state には 32,768 トークンの上限がある。429 は待って投げ直す
+//! - state には 32,768 トークン、リクエスト全体には 64Ki トークンの上限がある。問いの数に上限は無いが、
+//!   塊が多いと問いだけで全体の上限を超えるので、`max_tokens_exceeded` が返ったら塊を半分に割って投げ直す。429 は待って投げ直す
 use crate::block::{Block, SourceFile};
 use anyhow::{Result, anyhow};
 use jev::cli::ProviderKind;
-use jev::model::{Answer, NoulCriteria, Question, Request};
+use jev::model::{Answer, NoulCriteria, Question, Request, Response};
 use jev::provider;
 use serde_json::json;
 use std::io::IsTerminal;
@@ -79,7 +80,7 @@ pub fn run<'a>(kind: ProviderKind, query: &str, jobs: &[Job<'a>]) -> Result<Vec<
                     let mut out = Vec::new();
                     while !failed.load(Relaxed) {
                         let Some(job) = jobs.get(next.fetch_add(1, Relaxed)) else { break };
-                        let r = ask(kind, query, job);
+                        let r = ask(&|req| provider::of(kind).evaluate(req), query, job);
                         failed.fetch_or(r.is_err(), Relaxed);
                         out.push(r);
                         let n = done.fetch_add(1, Relaxed) + 1;
@@ -99,9 +100,18 @@ pub fn run<'a>(kind: ProviderKind, query: &str, jobs: &[Job<'a>]) -> Result<Vec<
     results.into_iter().flat_map(|r| r.map_or_else(|e| vec![Err(e)], |v| v.into_iter().map(Ok).collect())).collect()
 }
 
-fn ask<'a>(kind: ProviderKind, query: &str, job: &Job<'a>) -> Result<Vec<Hit<'a>>> {
+/// 1 ジョブを投げる。リクエストが大きすぎると言われたら塊を半分に割って、それぞれ投げ直す
+fn ask<'a>(send: &dyn Fn(&Request) -> Result<Response>, query: &str, job: &Job<'a>) -> Result<Vec<Hit<'a>>> {
     let req = request(query, job);
-    let res = with_retry(|| provider::of(kind).evaluate(&req))?;
+    let res = match with_retry(|| send(&req)) {
+        Err(e) if job.blocks.len() > 1 && e.to_string().contains("max_tokens_exceeded") => {
+            let (a, b) = job.blocks.split_at(job.blocks.len() / 2);
+            let mut hits = ask(send, query, &Job { file: job.file, blocks: a })?;
+            hits.extend(ask(send, query, &Job { file: job.file, blocks: b })?);
+            return Ok(hits);
+        }
+        r => r?,
+    };
     job.blocks
         .iter()
         .enumerate()
@@ -199,6 +209,22 @@ mod tests {
         // criteria は {true, false} の入れ子で送る (平らだと黙って捨てられる)
         let wire = serde_json::to_value(Question::Noul { instructions: json!(""), criteria: criteria.clone() }).unwrap();
         assert!(wire["criteria"]["true"].is_string() && wire["criteria"]["false"].is_string());
+    }
+
+    #[test]
+    fn split_when_too_big() {
+        // 問いが 2 個を超えると断るサーバー: 5 塊は 3 回割られて全部に答えが付く
+        let f = file(5, 1);
+        let jobs = plan(std::slice::from_ref(&f));
+        let send = |req: &Request| -> Result<Response> {
+            if req.questions.len() > 2 {
+                return Err(anyhow!("HTTP 400: {{\"detail\":{{\"error_type\":\"max_tokens_exceeded\"}}}}"));
+            }
+            let answers = req.questions.keys().map(|k| (k.clone(), Answer::Noul { noul: 0.5 })).collect();
+            Ok(Response { model: None, answers, usage: None })
+        };
+        let hits = ask(&send, "q", &jobs[0]).unwrap();
+        assert_eq!(hits.iter().map(|h| h.block.start).collect::<Vec<_>>(), [1, 2, 3, 4, 5]);
     }
 
     #[test]

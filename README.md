@@ -72,7 +72,7 @@ file-search --install-skill codex    # ~/.codex/skills/file-search/SKILL.md
 - Files over 1 MiB are skipped.
 - Each file is cut at non-indented lines that follow a blank line (roughly: top-level items). Blocks shorter than 3 lines are merged into the next; blocks over 40 lines are cut at the next blank line. Methods inside `impl` / `class` are not split individually.
 - Each block is asked as a yes/no question (`noul`): is the code at these lines what the user is looking for? The answer is a probability.
-- The whole file, with line numbers, goes into the request's state, and the questions point at blocks by line range. The model sees the surrounding code, and a file is sent once however many blocks it has. Blocks from different files never share a request. A file over 64 KB is split across requests.
+- The whole file, with line numbers, goes into the request's state, and the questions point at blocks by line range. The model sees the surrounding code, and a file is sent once however many blocks it has. Blocks from different files never share a request. A file over 64 KB is split across requests, and a request the server calls too big (`max_tokens_exceeded`) is split in half and resent.
 - Up to 16 requests run in parallel. 429 and 5xx responses are retried with backoff (1, 2, 4, 8, 16 s).
 - The request shape follows what [mizchi/jev-lint](https://github.com/mizchi/jev-lint) measured about Jev. The price in `--dry-run` uses its measured rate (about $0.042 per million input tokens) and is an estimate, not a quote.
 
