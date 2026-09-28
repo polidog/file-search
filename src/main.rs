@@ -101,3 +101,19 @@ fn read_files(paths: &[PathBuf], max: usize) -> Vec<SourceFile> {
     }
     files
 }
+
+#[cfg(test)]
+mod tests {
+    /// references.json の形を確かめる (書き方は AGENTS.md)
+    #[test]
+    fn references_are_structured() {
+        let refs: Vec<serde_json::Value> = serde_json::from_str(include_str!("../references.json")).unwrap();
+        for r in &refs {
+            let repo = r["repository"].as_str().expect("repository がない");
+            assert_eq!(r["url"], format!("https://github.com/{repo}"), "{repo}: url");
+            assert!(r["license"].is_string() || r["license"].is_null(), "{repo}: license");
+            let used = r["used_for"].as_array().expect("used_for がない");
+            assert!(!used.is_empty() && used.iter().all(|u| u.as_str().is_some_and(|s| !s.is_empty())), "{repo}: used_for");
+        }
+    }
+}
