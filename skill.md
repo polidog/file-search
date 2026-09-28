@@ -1,14 +1,15 @@
 ---
 name: jev-sift
-description: Search source code by meaning rather than keywords with the jev-sift CLI. Use when looking for code by what it does or how it behaves ("where are errors swallowed", "code that retries", "functions that write to the database") and grep would need guessing the exact identifiers.
+description: Sift source code or CSV / Excel rows by meaning with the jev-sift CLI. Best at listing every row of a large table that matches a natural-language description ("complaints about delivery", "expenses that look personal") for cents in seconds, when reading the rows yourself would be too slow or too expensive. Also finds code by what it does when grep would need guessing identifiers.
 ---
 
 # jev-sift
 
-`jev-sift` cuts files into function-sized blocks, asks Jev for the probability that each block is what a natural-language query describes, and prints the matches as `path:line`.
+`jev-sift` cuts code into function-sized blocks and tables (CSV / TSV / Excel) into one block per row, asks Jev for the probability that each block is what a natural-language query describes, and prints the matches as `path:line`.
 
 ## When to use
 
+- A CSV / Excel file has more rows than you can read, and the task is to find every row matching a description. Pass the file directly; set `-n` above the row count to get all matches, then read the `path:line` rows to confirm.
 - The question is about behavior or intent, not a known name: "where do we swallow errors?", "code that sends HTTP requests", "input that reaches SQL unescaped".
 - grep / rg would need you to guess identifiers, or returns too many hits to read.
 

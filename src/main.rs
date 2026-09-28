@@ -2,6 +2,7 @@ mod block;
 mod files;
 mod score;
 mod skill;
+mod table;
 
 use anyhow::{Result, bail};
 use block::SourceFile;
@@ -12,7 +13,7 @@ use std::io::{BufRead, IsTerminal};
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-/// ソースコードを関数くらいの塊に切り、探したい内容に当てはまる確率を Jev に聞いて、高い順に並べる
+/// ソースコードは関数くらいの塊に切り、CSV / Excel は 1 行を 1 塊にして、探したい内容に当てはまる確率を Jev に聞いて、高い順に並べる
 ///
 /// パスを省略して標準入力にパスを流すと、それを使う (例: rg -l catch | jev-sift "エラーを握りつぶしている箇所")。
 /// 見つかれば 0、閾値を超えるものが無ければ 1 で終わる (grep と同じ)
@@ -31,7 +32,7 @@ struct Cli {
     #[arg(short, long, default_value_t = 0.5)]
     threshold: f64,
     /// 採点する塊の数の上限 (API 呼び出し量の歯止め)
-    #[arg(short, long, default_value_t = 1000)]
+    #[arg(short, long, default_value_t = 20000)]
     max: usize,
     /// 送らずに、リクエスト数・トークン数・料金の目安だけ出す
     #[arg(long)]

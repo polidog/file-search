@@ -21,8 +21,11 @@ pub struct Block {
 }
 
 impl SourceFile {
-    /// ファイルを読んで塊に切る。大きすぎる・UTF-8 でない・NUL を含む・空のファイルは None
+    /// ファイルを読んで塊に切る。表 (CSV / Excel) は table に任せる。大きすぎる・UTF-8 でない・NUL を含む・空のファイルは None
     pub fn read(path: &Path) -> Option<SourceFile> {
+        if crate::table::is_table(path) {
+            return crate::table::read(path);
+        }
         if std::fs::metadata(path).ok()?.len() > MAX_FILE_BYTES {
             return None;
         }

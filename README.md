@@ -2,7 +2,7 @@
 
 [English](README.md) | [日本語](README.ja.md)
 
-Search source code **by meaning**, not keywords: "where do we swallow errors?", "code that retries". Files are cut into function-sized blocks, and for each block the probability that it is what you are looking for is asked of [Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev), the System One model from [TypeSafe AI](https://typesafe.ai/), via [polidog/jev](https://github.com/polidog/jev).
+Sift source code and CSV / Excel files **by meaning**, not keywords: "where do we swallow errors?", "customer queries complaining about delivery". Code is cut into function-sized blocks, tables into one block per row, and for each block the probability that it is what you are looking for is asked of [Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev), the System One model from [TypeSafe AI](https://typesafe.ai/), via [polidog/jev](https://github.com/polidog/jev).
 
 ## What it is good at
 
@@ -18,6 +18,8 @@ Measured against Claude Code (Sonnet):
   | Claude Code | 0.71–0.83 | $1.1–3.9 | 3–8 min |
 
   Claude Code's best question had five subagents read every row, for $3.9. The gap widens with the number of rows. Raise `-n` when you want everything.
+
+  That measurement turned the CSV into one-row-per-block text by hand; CSV / Excel files can now be passed as they are (see "Sifting tables" below).
 
 ## Installation
 
@@ -52,6 +54,22 @@ Pipe a file list to narrow the candidates first (and respect `.gitignore`):
 rg -l "fn " | jev-sift "code that sends HTTP requests"
 ```
 
+### Sifting tables
+
+CSV / TSV / Excel (`.xlsx` `.xlsm` `.xlsb` `.xls` `.ods`, first sheet) become one block per row. The first row is read as the header, and each row is shown to the model as `header: value | header: value`. Line numbers count the header as line 1, so `sed -n 381p` shows the original row.
+
+```bash
+jev-sift "questions about fees for exchanging currency" queries.csv -n 3
+```
+
+```
+0.97  queries.csv:381  id: 380 | text: IS there a fee to exchange currency?
+0.97  queries.csv:1879  id: 1878 | text: Will there be a charge for exchanging foreign currency?
+0.97  queries.csv:5444  id: 5443 | text: Are there any fees when exchanging to foreign currencies?
+```
+
+To get every matching row, set `-n` above the row count. Ten thousand rows cost about $0.09 and take about ten seconds.
+
 Price a run before sending anything:
 
 ```bash
@@ -64,7 +82,7 @@ jev-sift "where errors are swallowed" src --dry-run
 | `PATH...` | stdin, else `.` | Files or directories to search (several allowed). Omit them and pipe paths on stdin instead |
 | `-n`, `--num` | `10` | Number of results to show |
 | `-t`, `--threshold` | `0.5` | Hide results below this probability |
-| `-m`, `--max` | `1000` | Maximum number of blocks to score (caps API usage) |
+| `-m`, `--max` | `20000` | Maximum number of blocks to score (caps API usage) |
 | `--dry-run` | | Print the number of requests, input tokens and an estimated price, and send nothing |
 | `-p`, `--provider` | `typesafe` | `typesafe` / `cloudflare` / `vercel` (or `JEV_PROVIDER`) |
 
@@ -86,9 +104,10 @@ In the cli/cli measurement above, Claude Code never called jev-sift on its own w
 ## How it works
 
 - Walks each directory in `PATH`, skipping hidden entries and `target` / `node_modules` / `vendor`. Binary and non-UTF-8 files are ignored. `.gitignore` is not read.
-- Files over 1 MiB are skipped.
+- Files over 1 MiB are skipped (tables are exempt).
 - Each file is cut at non-indented lines that follow a blank line (roughly: top-level items). Blocks shorter than 3 lines are merged into the next; blocks over 40 lines are cut at the next blank line. Methods inside `impl` / `class` are not split individually.
-- Each block is asked as a yes/no question (`noul`): is the code at these lines what the user is looking for? The answer is a probability.
+- A table's first row is read as the header, and every row after it is one block. Empty rows are skipped. Newlines inside a value become spaces, so a CSV with newlines inside quotes gets line numbers that drift from the file's.
+- Each block is asked as a yes/no question (`noul`): are these lines what the user is looking for? The answer is a probability.
 - The whole file, with line numbers, goes into the request's state, and the questions point at blocks by line range. The model sees the surrounding code, and a file is sent once however many blocks it has. Blocks from different files never share a request. A file over 64 KB is split across requests, and a request the server calls too big (`max_tokens_exceeded`) is split in half and resent.
 - Up to 16 requests run in parallel. 429 and 5xx responses are retried with backoff (1, 2, 4, 8, 16 s).
 - The request shape follows what [mizchi/jev-lint](https://github.com/mizchi/jev-lint) measured about Jev. The price in `--dry-run` uses its measured rate (about $0.042 per million input tokens) and is an estimate, not a quote.

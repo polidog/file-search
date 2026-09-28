@@ -28,7 +28,7 @@ const USD_PER_MTOK: f64 = 0.042;
 /// サーバーがリクエストごとに足すトークン数 (jev-lint の実測)
 const TOKENS_PER_REQUEST: usize = 270;
 
-const TASK: &str = "The user is searching a codebase. Judge only the code at `lines` of `source`, and only whether it is what the user is looking for -- the rest of the file is there for context.";
+const TASK: &str = "The user is searching files (source code, or a table rendered one row per line). Judge only the text at `lines` of `source`, and only whether it is what the user is looking for -- the rest of the file is there for context.";
 
 /// 1 リクエストぶん: 1 つのファイルの、続いた塊の並び
 pub struct Job<'a> {
@@ -156,9 +156,9 @@ fn request(query: &str, job: &Job) -> Request {
         source.truncate(cut);
     }
     let criteria = NoulCriteria {
-        yes: Some(json!("The code at these lines itself is an instance of what the user is looking for.")),
+        yes: Some(json!("The text at these lines itself is an instance of what the user is looking for.")),
         no: Some(json!(
-            "It is not. It may sit next to such code, mention related words, or be loosely related, but it is not what the user is looking for."
+            "It is not. It may sit next to such text, mention related words, or be loosely related, but it is not what the user is looking for."
         )),
     };
     let questions = job
