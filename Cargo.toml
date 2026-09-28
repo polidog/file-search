@@ -1,6 +1,6 @@
 [package]
 name = "jev-sift"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2024"
 description = "Sift source code and tables by meaning, scored by Jev"
 license = "MIT"
