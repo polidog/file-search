@@ -22,7 +22,18 @@
     "url": "https://github.com/polidog/jev",
     "license": "MIT",
     "used_for": [
-      "Jev client library: request/response types and the typesafe / cloudflare / vercel providers"
+      "Jev client library: request/response types and the typesafe / cloudflare / vercel providers",
+      "Build each request from jev::model (Request, Question, NoulCriteria, Answer) and send it with provider::of(kind).evaluate",
+      "Reuse jev::cli::ProviderKind for -p/--provider and JEV_PROVIDER",
+      "Detect rate limits and server errors by the \"HTTP <status>: ...\" error text that src/http.rs returns",
+      "Point the README and skill.md at its #providers section for each provider's environment variables"
+    ],
+    "files": [
+      "src/model.rs",
+      "src/cli.rs",
+      "src/http.rs",
+      "src/provider/mod.rs",
+      "README.md"
     ]
   },
   {
